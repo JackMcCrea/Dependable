@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<dconfig>
+	<setup>
+		<param name="tempdir">tmp-packages/</param>
+		<param name="default-dir">dependencies</param>
+		<param name="force-acquire">1</param>
+	</setup>
+	<packages>
+		<package name="somepackage">
+			<uri>http://keesaco.com/no_eyes_new.png</uri>
+			<unzip>0</unzip>
+			<moveto>app/static/js/</moveto>
+			<dlname>no_new_eyes.png</dlname>
+		</package>
+	</packages>
+</dconfig>
