@@ -1,4 +1,18 @@
 ###########################################################################
+####																   ####
+####				   AppBuild v0.0.1 pre-release					   ####
+####       (C) copyright Jack McCrea 2014, used with permission		   ####
+####																   ####
+###########################################################################
+####
+####   NOTE: THIS IS A PRE-RELEASE OF AppBuild AND IS NOT CONSIDERED   ####
+####   STABLE.
+####
+###########################################################################
+
+INPUT_FORMAT_VERSION = 00003
+
+###########################################################################
 ## \file AppBuild.py
 ## \brief
 ## \author
@@ -95,6 +109,10 @@ def node_text(node, child):
 
 for param in root.find('setup').findall('param'):
 	config.update({param.attrib['name'] : param.text })
+
+if 'input-version' in config:
+	if int(config['input-version']) > INPUT_FORMAT_VERSION:
+		die("The input file version is newer than this version of AppBuild. Please update AppBuild then try again.")
 
 
 for package in root.find('packages').findall('package'):
