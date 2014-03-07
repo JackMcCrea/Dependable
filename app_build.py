@@ -1,9 +1,10 @@
 import xml.etree.ElementTree as ET
-import errno
 import os
-import urllib
+import urllib2
 import sys
 import shutil
+import zipfile
+import distutils.core
 
 tree = ET.parse('dependencies.xml')
 root = tree.getroot()
@@ -35,6 +36,15 @@ def get_file_name(dict, prefix=""):
 def temp_file_name(filedir, dict, prefix=""):
 	return os.path.join(filedir, get_file_name(dict, prefix))
 
+def node_text(node, child):
+	sub_node = node.find(child)
+	
+	if sub_node is not None:
+		return sub_node.text
+	else:
+		return None
+
+
 #################
 
 for param in root.find('setup').findall('param'):
@@ -46,8 +56,33 @@ for package in root.find('packages').findall('package'):
 	name = package.attrib['name']
 
 	for package_conf in package.getchildren():
-		dict.update( { package_conf.tag : package_conf.text } )
-	
+		if package_conf.tag != 'move' and package_conf.tag != 'mkdir':
+			dict.update( { package_conf.tag : package_conf.text } )
+
+	moves = []
+	for fmove in package.findall('move'):
+		movdict = {}
+		
+		inner_source = fmove.find('innersource')
+		isdir = False
+		if inner_source is not None:
+			movdict.update( { 'from' : inner_source.text } )
+			if 'dir' in inner_source.attrib:
+				if int(inner_source.attrib['dir']):
+					isdir = True
+		movdict.update( { 'isdir' 	: isdir } )
+
+		movdict.update( { 'to' 		: node_text(fmove, 'destination') } )
+
+		newdirs = []
+		for newdir in fmove.findall('mkdir'):
+			newdirs.append( { 'dirname' : newdir.text } )
+		movdict.update( { 'mkdir' : newdirs } )
+
+		moves.append(movdict)
+
+	dict.update( { 'moves' : moves } )
+
 	packages.update( { name : dict } )
 
 
@@ -56,17 +91,44 @@ tmp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), config['tempd
 mkdir(tmp_dir, False)
 
 for name, dict in packages.iteritems():
-	filename = temp_file_name(tmp_dir, dict)
+	filedir = os.path.join(tmp_dir, name)
+	mkdir(filedir)
+	
+	filename = temp_file_name(filedir, dict)
 	sys.stdout.write("Downloading '%s' ... "%(dict['uri']))
 	sys.stdout.flush()
-	response = urllib.urlretrieve(dict['uri'], filename)
+	req = urllib2.Request(dict['uri'])
+	rhandle = urllib2.urlopen(req)
+	
+	with open(filename, 'wb') as outfile:
+		shutil.copyfileobj(rhandle, outfile)
 
 	print "Done!"
 
+#sys.exit(0)
+
 for name, dict in packages.iteritems():
-	src_file = temp_file_name(tmp_dir, dict)
-	dst_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), dict['moveto'], get_file_name(dict))
-	shutil.copy2(src_file, dst_file);
+	dl_dir = os.path.join(tmp_dir, name)
+
+	if int(dict['unzip']):
+		zip_file = temp_file_name(dl_dir, dict)
+		with zipfile.ZipFile(zip_file, 'r') as zip:
+			zip.extractall(dl_dir)
+
+	for fmove in dict['moves']:
+		for newdir in fmove['mkdir']:
+			mkdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), newdir['dirname']))
+		
+		if int(dict['unzip']) and fmove['from']:
+			src_file = os.path.join(dl_dir, fmove['from'])
+		else:
+			src_file = temp_file_name(dl_dir, dict)
+
+		dst_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), fmove['to'])
+		if fmove['isdir']:
+			distutils.dir_util.copy_tree(src_file, dst_file)
+		else:
+			shutil.copy2(src_file, dst_file);
 
 
 
