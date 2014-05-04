@@ -1,11 +1,11 @@
 ###########################################################################
 ####																   ####
-####				   AppBuild v0.0.1 pre-release					   ####
+####				  Dependable v0.0.1 pre-release					   ####
 ####       (C) copyright Jack McCrea 2014, used with permission		   ####
 ####																   ####
 ###########################################################################
 ####
-####   NOTE: THIS IS A PRE-RELEASE OF AppBuild AND IS NOT CONSIDERED   ####
+####   NOTE: THIS IS A PRE-RELEASE OF Dependable AND IS NOT CONSIDERED ####
 ####   STABLE.
 ####
 ###########################################################################
@@ -17,7 +17,7 @@ INPUT_FORMAT_VERSION = 00003
 ## \brief
 ## \author
 ###########################################################################
-## \package AppBuild
+## \package Dependable
 ## \brief
 ###########################################################################
 import xml.etree.ElementTree as ET
@@ -112,7 +112,7 @@ for param in root.find('setup').findall('param'):
 
 if 'input-version' in config:
 	if int(config['input-version']) > INPUT_FORMAT_VERSION:
-		die("The input file version is newer than this version of AppBuild. Please update AppBuild then try again.")
+		die("The input file version is newer than this version of Dependable. Please update Dependable then try again.")
 
 
 for package in root.find('packages').findall('package'):
