@@ -1,3 +1,25 @@
+###########################################################################
+####																   ####
+####				  Dependable v0.0.1 pre-release					   ####
+####       (C) copyright Jack McCrea 2014, used with permission		   ####
+####																   ####
+###########################################################################
+####
+####   NOTE: THIS IS A PRE-RELEASE OF Dependable AND IS NOT CONSIDERED ####
+####   STABLE.
+####
+###########################################################################
+
+INPUT_FORMAT_VERSION = 00003
+
+###########################################################################
+## \file AppBuild.py
+## \brief
+## \author
+###########################################################################
+## \package Dependable
+## \brief
+###########################################################################
 import xml.etree.ElementTree as ET
 import os
 import urllib2
@@ -13,10 +35,23 @@ config = {}
 packages = {}
 args = {'update' : True, 'overwrite' : True}
 
+###########################################################################
+## \brief
+## \param
+## \return
+## \author
+###########################################################################
 def die(msg):
 	print msg
 	sys.exit(1)
 
+###########################################################################
+## \brief
+## \param
+## \param
+## \return
+## \author
+###########################################################################
 def mkdir(directory, need_overwrite=True):
 	if os.path.exists(directory):
 		if need_overwrite and (not (args['overwrite'])):
@@ -27,15 +62,36 @@ def mkdir(directory, need_overwrite=True):
 		except:
 			die("Couldn't make directory: " + directory)
 
+###########################################################################
+## \brief
+## \param
+## \param
+## \return
+## \author
+###########################################################################
 def get_file_name(dict, prefix=""):
 	if 'dlname' in dict:
 		return prefix+dict['dlname']
 	else:
 		return prefix+dict['uri'].rpartition('/')[2].rpartition('\\')[2]
 
+###########################################################################
+## \brief
+## \param
+## \param
+## \return
+## \author
+###########################################################################
 def temp_file_name(filedir, dict, prefix=""):
 	return os.path.join(filedir, get_file_name(dict, prefix))
 
+###########################################################################
+## \brief
+## \param
+## \param
+## \return
+## \author
+###########################################################################
 def node_text(node, child):
 	sub_node = node.find(child)
 	
@@ -44,11 +100,19 @@ def node_text(node, child):
 	else:
 		return None
 
+###########################################################################
+###########################################################################
+##############################   MAIN BODY   ##############################
+###########################################################################
+###########################################################################
 
-#################
 
 for param in root.find('setup').findall('param'):
 	config.update({param.attrib['name'] : param.text })
+
+if 'input-version' in config:
+	if int(config['input-version']) > INPUT_FORMAT_VERSION:
+		die("The input file version is newer than this version of Dependable. Please update Dependable then try again.")
 
 
 for package in root.find('packages').findall('package'):
@@ -66,7 +130,11 @@ for package in root.find('packages').findall('package'):
 		inner_source = fmove.find('innersource')
 		isdir = False
 		if inner_source is not None:
-			movdict.update( { 'from' : inner_source.text } )
+			if inner_source.text is None:
+				inner_source_text = ""
+			else:
+				inner_source_text = inner_source.text
+			movdict.update( { 'from' : inner_source_text } )
 			if 'dir' in inner_source.attrib:
 				if int(inner_source.attrib['dir']):
 					isdir = True
@@ -105,21 +173,22 @@ for name, dict in packages.iteritems():
 
 	print "Done!"
 
-#sys.exit(0)
-
 for name, dict in packages.iteritems():
 	dl_dir = os.path.join(tmp_dir, name)
 
 	if int(dict['unzip']):
 		zip_file = temp_file_name(dl_dir, dict)
+		sys.stdout.write("unzipping " + name + " ... ")
+		sys.stdout.flush()
 		with zipfile.ZipFile(zip_file, 'r') as zip:
 			zip.extractall(dl_dir)
+		print "Done!"
 
 	for fmove in dict['moves']:
 		for newdir in fmove['mkdir']:
 			mkdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), newdir['dirname']))
 		
-		if int(dict['unzip']) and fmove['from']:
+		if int(dict['unzip']) and fmove['from'] is not None:
 			src_file = os.path.join(dl_dir, fmove['from'])
 		else:
 			src_file = temp_file_name(dl_dir, dict)
